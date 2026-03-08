@@ -1,0 +1,72 @@
+`timescale 1ns / 1ps
+
+
+module uart_tx (
+    input wire clk,
+    input wire rst,
+    input wire tx_tick,
+    input wire tx_signal, // Corrected typo
+    input wire [7:0] tx_data,
+    output reg tx_line,
+    output reg tx_busy 
+);
+  
+    reg [2:0] count;
+    reg [7:0] shift_reg;
+    reg [1:0] State;
+  
+    localparam IDLE  = 2'b00;
+    localparam START = 2'b01;
+    localparam DATA  = 2'b10;
+    localparam STOP  = 2'b11;
+
+    // Use rst for initial values in hardware
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            count   <= 0;
+            State   <= IDLE;
+            tx_busy <= 0;
+            tx_line <= 1;
+        end else begin
+            case (State)
+                IDLE: begin
+                    tx_line <= 1;
+                    tx_busy <= 0;
+                    if (tx_signal) begin
+                        shift_reg <= tx_data;
+                        tx_busy   <= 1;
+                        State     <= START;
+                    end
+                end
+
+                START: begin
+                    if (tx_tick) begin
+                        tx_line <= 0; // Pull line low for Start Bit
+                        State   <= DATA;
+                        count   <= 0;
+                    end
+                end
+
+                DATA: begin
+                    if (tx_tick) begin
+                        tx_line <= shift_reg[count];
+                        if (count < 7) begin
+                            count <= count + 1;
+                        end else begin
+                            State <= STOP; // ONLY move to STOP after 8th bit
+                        end
+                    end
+                end
+
+                STOP: begin
+                    if (tx_tick) begin
+                        tx_line <= 1; // Pull line high for Stop Bit
+                        State   <= IDLE;
+                    end
+                end
+
+                default: State <= IDLE;
+            endcase
+        end
+    end
+endmodule

@@ -1,0 +1,108 @@
+`timescale 1ns / 1ps
+
+module uart_top_tb;
+
+    
+    reg clk;
+    reg rst;
+
+    
+    reg tx_signal;
+    reg [7:0] tx_data;
+
+    
+    wire tx_line;
+    wire tx_busy;
+
+    
+    wire [7:0] rx_data;
+    wire rx_done;
+
+    
+    uart_top dut (
+        .clk(clk),
+        .rst(rst),
+        .tx_signal(tx_signal),
+        .tx_data(tx_data),
+        .tx_line(tx_line),
+        .tx_busy(tx_busy),
+        .rx_line(tx_line),
+        .rx_data(rx_data),
+        .rx_done(rx_done)
+    );
+
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+
+        rst       = 1;
+        tx_signal = 0;
+        tx_data   = 8'h00;
+        #200;
+        rst = 0;
+        #100;
+
+        // ---- Send byte 1: 0x41 ('A') ----
+        tx_data   = 8'h41;
+        tx_signal = 1;
+        #10;
+        tx_signal = 0;
+
+        
+        wait(tx_busy == 0);
+        // Wait until receiver is done
+        wait(rx_done == 1);
+        #10;
+        
+        #500000; 
+
+        // ---- Send byte 2: 0xFF ----
+        tx_data   = 8'hFF;
+        tx_signal = 1;
+        #10;
+        tx_signal = 0;
+
+        wait(tx_busy == 0);
+        wait(rx_done == 1);
+        #10;
+        #500000;
+
+        // ---- Send byte 3: 0x55 ----
+        tx_data   = 8'h55;
+        tx_signal = 1;
+        #10;
+        tx_signal = 0;
+
+        wait(tx_busy == 0);
+        wait(rx_done == 1);
+        #10;
+        #500000;
+
+        // ---- Send byte 4: 0xAA ----
+        tx_data   = 8'hAA;
+        tx_signal = 1;
+        #10;
+        tx_signal = 0;
+
+        wait(tx_busy == 0);
+        wait(rx_done == 1);
+        #10;
+        #500000;
+
+        // ---- Send byte 5: 0x00 ----
+        tx_data   = 8'h00;
+        tx_signal = 1;
+        #10;
+        tx_signal = 0;
+
+        wait(tx_busy == 0);
+        wait(rx_done == 1);
+        #10;
+        #500000;
+
+        $finish;
+
+    end
+
+endmodule

@@ -1,0 +1,31 @@
+`timescale 1ns / 1ps
+
+module BRG_rx(input wire clk,
+              input wire rst,
+              output reg rx_tick);
+
+  reg [9:0] count;
+
+  initial begin
+    count<=0;
+    rx_tick<=0;
+  end
+  
+  
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        count   <= 0;
+        rx_tick <= 0;
+    end else begin          // <-- add this else
+        if (count == 650) begin
+            count   <= 0;
+            rx_tick <= 1;
+        end else begin
+            count   <= count + 1;
+            rx_tick <= 0;
+        end
+    end
+end
+  
+  
+endmodule
